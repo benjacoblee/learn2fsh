@@ -1,0 +1,5 @@
+complete -c todo -s h -l help -d "Show available options"
+complete -c todo -s a -l add -d "Add todo"
+complete -c todo -s s -l show -d "Show all todos"
+complete -c todo -s d -l delete -d "Delete a todo"
+complete -c todo -s t -l toggle -d "Toggle done/undone"

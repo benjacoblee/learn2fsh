@@ -1,6 +1,6 @@
 #!/usr/bin/fish
 
-argparse a/add s/show h/help -- $argv
+argparse a/add s/show h/help d/delete -- $argv
 set todos_file "$PWD/todos.txt"
 
 if not test -e "$todos_file"
@@ -24,11 +24,20 @@ end
 
 set value $argv[1]
 
+function hasTodos
+    set num_todos $(cat $todos_file | count)
+    if test "$num_todos" -gt 0
+        return 0
+    else
+        return 1
+    end
+end
+
 if set -ql _flag_help
-    echo "[-h|--help] [-a|--add] [-s|--show] [ARGUMENT ...]"
+    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [ARGUMENT ...]"
     return 0
 else if set -ql _flag_add
-    if test -z $value
+    if test -z $value # test is string is length zero
         echo Need todo value.
         return 0
     end
@@ -38,15 +47,20 @@ else if set -ql _flag_add
     cat $todos_file
     return 0
 else if set -ql _flag_show
-    set num_todos $(cat $todos_file | count)
-    if test "$num_todos" -gt 0
+    if hasTodos
         echo Todos:
         cat $todos_file
         return 0
     else
         echo No todos yet.
     end
+else if set -ql _flag_delete
+    if hasTodos
+        echo "Delete todo: $value?"
+    else
+        echo No todos to delete.
+    end
 else
     echo "No flag provided. Valid flags:"
-    echo "[-h|--help] [-a|--add] [-s|--show] [ARGUMENT ...]"
+    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [ARGUMENT ...]"
 end

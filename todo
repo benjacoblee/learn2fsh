@@ -3,6 +3,8 @@
 argparse a/add s/show h/help d/delete -- $argv
 set todos_file "$PWD/todos.txt"
 
+# need to prompt to install fzf
+
 if not test -e "$todos_file"
     echo "No data file. Create one?"
     while read --nchars 1 -l response --prompt-str="Create one? (y/n) "
@@ -33,6 +35,27 @@ function hasTodos
     end
 end
 
+function showTodos
+    set num_todos $(cat $todos_file | count)
+    if test "$num_todos" -gt 0
+        echo Todos:
+        cat $todos_file
+        return 0
+    else
+        echo No todos to show.
+    end
+end
+
+function checkDeps
+    if not command -q fzf
+        echo "fzf is a required dependency. Please install fzf to continue."
+        return 1
+    end
+end
+
+checkDeps
+
+
 if set -ql _flag_help
     echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [ARGUMENT ...]"
     return 0
@@ -43,20 +66,30 @@ else if set -ql _flag_add
     end
     echo Adding \'$value\' to todos...
     echo "- [ ] $value" >>$todos_file
-    echo Todos:
-    cat $todos_file
+    showTodos
     return 0
 else if set -ql _flag_show
-    if hasTodos
-        echo Todos:
-        cat $todos_file
-        return 0
-    else
-        echo No todos yet.
-    end
+    showTodos
 else if set -ql _flag_delete
     if hasTodos
-        echo "Delete todo: $value?"
+        set selected_line_number $(cat $todos_file | nl -w1 -s':' | fzf --ansi --exact +m | awk -F: '{print $1}')
+        set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
+        echo "Delete todo: $selected_todo?"
+        while read --nchars 1 -l response --prompt-str="Confirm? (y/n) "
+            switch $response
+                case y Y
+                    echo Okay, deleting todo.
+                    sed -i "$selected_line_number"'d' $todos_file >>/dev/null
+                    showTodos
+                    break
+                case n N
+                    echo Okay! Have a nice day!
+                    return 1
+                case '*'
+                    echo Invalid input.
+                    continue
+            end
+        end
     else
         echo No todos to delete.
     end

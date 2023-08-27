@@ -1,0 +1,52 @@
+#!/usr/bin/fish
+
+argparse a/add s/show h/help -- $argv
+set todos_file "$PWD/todos.txt"
+
+if not test -e "$todos_file"
+    echo "No data file. Create one?"
+    while read --nchars 1 -l response --prompt-str="Create one? (y/n) "
+        switch $response
+            case y Y
+                echo Okay, creating data file.
+                echo Created file at "$todos_file"
+                touch $todos_file
+                break
+            case n N
+                echo Okay! Have a nice day!
+                return 1
+            case '*'
+                echo Invalid input.
+                continue
+        end
+    end
+end
+
+set value $argv[1]
+
+if set -ql _flag_help
+    echo "[-h|--help] [-a|--add] [-s|--show] [ARGUMENT ...]"
+    return 0
+else if set -ql _flag_add
+    if test -z $value
+        echo Need todo value.
+        return 0
+    end
+    echo Adding \'$value\' to todos...
+    echo "- [ ] $value" >>$todos_file
+    echo Todos:
+    cat $todos_file
+    return 0
+else if set -ql _flag_show
+    set num_todos $(cat $todos_file | count)
+    if test "$num_todos" -gt 0
+        echo Todos:
+        cat $todos_file
+        return 0
+    else
+        echo No todos yet.
+    end
+else
+    echo "No flag provided. Valid flags:"
+    echo "[-h|--help] [-a|--add] [-s|--show] [ARGUMENT ...]"
+end

@@ -53,12 +53,13 @@ end
 
 function showTodos
     set num_todos $(cat $todos_file | count)
-    if test "$num_todos" -gt 0
+    if hasTodos
         echo Todos:
         cat $todos_file
         return 0
     else
         echo No todos to show.
+        return 1
     end
 end
 
@@ -66,7 +67,6 @@ checkDeps
 
 if set -ql _flag_help
     echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
-    return 0
 else if set -ql _flag_add
     if test -z $value # test is string is length zero
         echo Need todo value.
@@ -75,7 +75,6 @@ else if set -ql _flag_add
     echo Adding \'$value\' to todos...
     echo "- [ ] $value" >>$todos_file
     showTodos
-    return 0
 else if set -ql _flag_show
     showTodos
 else if set -ql _flag_delete

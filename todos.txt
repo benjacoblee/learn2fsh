@@ -1,5 +1,4 @@
 - [ ] Run a marathon
 - [ ] Some other todo
 - [ ] Eat pizza
-- [ ] Cry in bed
 - [ ] Meditate

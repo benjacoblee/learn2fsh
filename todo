@@ -81,9 +81,9 @@ else if set -ql _flag_show
 else if set -ql _flag_delete
     if hasTodos
         set selected_todo $(cat $todos_file | fzf) >>/dev/null
-
-        if test -e selected_todo
-            echo "Delete todo: $selected_todo?"
+        if string length -q -- $selected_todo
+            echo Deleting todo:
+            echo $selected_todo
             while read --nchars 1 -l response --prompt-str="Confirm? (y/n) "
                 switch $response
                     case y Y
@@ -109,7 +109,7 @@ else if set -ql _flag_delete
     end
 else if set -ql _flag_toggle
     set selected_line_number $(cat $todos_file | nl -w1 -s':' | fzf --ansi --exact +m | awk -F: '{print $1}')
-    if test -e selected_line_number
+    if string length -q -- $selected_line_number
         set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
         echo $selected_todo
         set not_done $(string match -r -- '-\s\[\s\]' $selected_todo)

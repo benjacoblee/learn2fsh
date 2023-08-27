@@ -81,39 +81,50 @@ else if set -ql _flag_show
 else if set -ql _flag_delete
     if hasTodos
         set selected_todo $(cat $todos_file | fzf) >>/dev/null
-        echo "Delete todo: $selected_todo?"
-        while read --nchars 1 -l response --prompt-str="Confirm? (y/n) "
-            switch $response
-                case y Y
-                    echo Okay, deleting todo.
-                    sd -s -- "$selected_todo" "" $todos_file >>/dev/null
-                    sed -i '/^\s*$/d' ./todos.txt
-                    showTodos
-                    break
-                case n N
-                    echo Okay! Have a nice day!
-                    return 1
-                case '*'
-                    echo Invalid input.
-                    continue
+
+        if test -e selected_todo
+            echo "Delete todo: $selected_todo?"
+            while read --nchars 1 -l response --prompt-str="Confirm? (y/n) "
+                switch $response
+                    case y Y
+                        echo Okay, deleting todo.
+                        sd -s -- "$selected_todo" "" $todos_file >>/dev/null
+                        sed -i '/^\s*$/d' ./todos.txt
+                        showTodos
+                        break
+                    case n N
+                        echo Okay! Have a nice day!
+                        return 1
+                    case '*'
+                        echo Invalid input.
+                        continue
+                end
             end
+        else
+            echo "User cancelled action. See you later!"
+            exit 1
         end
     else
         echo No todos to delete.
     end
 else if set -ql _flag_toggle
     set selected_line_number $(cat $todos_file | nl -w1 -s':' | fzf --ansi --exact +m | awk -F: '{print $1}')
-    set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
-    echo $selected_todo
-    set not_done $(string match -r -- '-\s\[\s\]' $selected_todo)
-    if test "$not_done"
-        set split_string $(string split -f2 -- '- [ ]' $selected_todo)
-        sd -s -- $selected_todo "- [x]$split_string" $todos_file >>/dev/null
-        showTodos
+    if test -e selected_line_number
+        set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
+        echo $selected_todo
+        set not_done $(string match -r -- '-\s\[\s\]' $selected_todo)
+        if test "$not_done"
+            set split_string $(string split -f2 -- '- [ ]' $selected_todo)
+            sd -s -- $selected_todo "- [x]$split_string" $todos_file >>/dev/null
+            showTodos
+        else
+            set split_string $(string split -f2 -- '- [x]' $selected_todo)
+            sd -s -- $selected_todo "- [ ]$split_string" $todos_file >>/dev/null
+            showTodos
+        end
     else
-        set split_string $(string split -f2 -- '- [x]' $selected_todo)
-        sd -s -- $selected_todo "- [ ]$split_string" $todos_file >>/dev/null
-        showTodos
+        echo "User cancelled action. See you later!"
+        exit 1
     end
 else
     echo "Valid flags:"

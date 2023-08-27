@@ -4,6 +4,7 @@ argparse a/add s/show h/help d/delete t/toggle -- $argv
 set todos_file "$PWD/todos.txt"
 set value $argv[1]
 set deps fzf sd
+set flags "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
 
 if not test -e "$todos_file"
     echo "No data file. Create one?"
@@ -66,7 +67,7 @@ end
 checkDeps
 
 if set -ql _flag_help
-    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
+    echo $flags
 else if set -ql _flag_add
     if test -z $value # test is string is length zero
         echo Need todo value.
@@ -116,5 +117,5 @@ else if set -ql _flag_toggle
     end
 else
     echo "Valid flags:"
-    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
+    echo $flags
 end

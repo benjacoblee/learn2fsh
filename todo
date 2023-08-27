@@ -1,9 +1,9 @@
 #!/usr/bin/fish
 
-argparse a/add s/show h/help d/delete -- $argv
+argparse a/add s/show h/help d/delete t/toggle -- $argv
 set todos_file "$PWD/todos.txt"
-
-# need to prompt to install fzf
+set value $argv[1]
+set deps fzf sd
 
 if not test -e "$todos_file"
     echo "No data file. Create one?"
@@ -24,7 +24,23 @@ if not test -e "$todos_file"
     end
 end
 
-set value $argv[1]
+# placeholder
+function checkDeps
+    for dep in $deps
+        if not command -q $dep
+            echo Installation: $dep is required.
+            if test "$dep" = fzf
+                sudo apt install fzf
+            else if test "$dep" = sd
+                sudo curl https://sh.rustup.rs -sSf | sh -s -- -y && fish_add_path $HOME/.cargo/bin
+                # sudo cargo install sd
+            else
+                echo "Something went wrong. Exiting"
+                exit 1
+            end
+        end
+    end
+end
 
 function hasTodos
     set num_todos $(cat $todos_file | count)
@@ -46,18 +62,10 @@ function showTodos
     end
 end
 
-function checkDeps
-    if not command -q fzf
-        echo "fzf is a required dependency. Please install fzf to continue."
-        return 1
-    end
-end
-
 checkDeps
 
-
 if set -ql _flag_help
-    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [ARGUMENT ...]"
+    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
     return 0
 else if set -ql _flag_add
     if test -z $value # test is string is length zero
@@ -72,14 +80,14 @@ else if set -ql _flag_show
     showTodos
 else if set -ql _flag_delete
     if hasTodos
-        set selected_line_number $(cat $todos_file | nl -w1 -s':' | fzf --ansi --exact +m | awk -F: '{print $1}')
-        set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
+        set selected_todo $(cat $todos_file | fzf) >>/dev/null
         echo "Delete todo: $selected_todo?"
         while read --nchars 1 -l response --prompt-str="Confirm? (y/n) "
             switch $response
                 case y Y
                     echo Okay, deleting todo.
-                    sed -i "$selected_line_number"'d' $todos_file >>/dev/null
+                    sd -s -- "$selected_todo" "" $todos_file >>/dev/null
+                    sed -i '/^\s*$/d' ./todos.txt
                     showTodos
                     break
                 case n N
@@ -93,7 +101,21 @@ else if set -ql _flag_delete
     else
         echo No todos to delete.
     end
+else if set -ql _flag_toggle
+    set selected_line_number $(cat $todos_file | nl -w1 -s':' | fzf --ansi --exact +m | awk -F: '{print $1}')
+    set selected_todo $(sed -n $selected_line_number'p' $todos_file) >>/dev/null
+    echo $selected_todo
+    set not_done $(string match -r -- '-\s\[\s\]' $selected_todo)
+    if test "$not_done"
+        set split_string $(string split -f2 -- '- [ ]' $selected_todo)
+        sd -s -- $selected_todo "- [x]$split_string" $todos_file >>/dev/null
+        showTodos
+    else
+        set split_string $(string split -f2 -- '- [x]' $selected_todo)
+        sd -s -- $selected_todo "- [ ]$split_string" $todos_file >>/dev/null
+        showTodos
+    end
 else
-    echo "No flag provided. Valid flags:"
-    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [ARGUMENT ...]"
+    echo "Valid flags:"
+    echo "[-h|--help] [-a|--add] [-s|--show] [-d|--delete] [-t|--toggle] [ARGUMENT ...]"
 end

@@ -64,9 +64,9 @@ if string length -q -- $action
             set choices
             add_checkboxes
             set choice $(gum choose $choices)
-            set done $(echo $choice | cut -d " " -f 1)
-            set choice $(echo $choice | cut -d "]" -f 2  | sed 's/\s//')
             if string length -q -- $choice
+                set done $(echo $choice | cut -d " " -f 1)
+                set choice $(echo $choice | cut -d "]" -f 2  | sed 's/\s//')
                 if test $done = '[x]'
                     set done true
                     sed -i "s/$choice,$done/$choice,false/g" $todos_file
@@ -74,11 +74,11 @@ if string length -q -- $action
                     set done false
                     sed -i "s/$choice,$done/$choice,true/g" $todos_file
                 end
+                parse_todos
+                prompt
             else
                 show_helpful_error
             end
-            parse_todos
-            prompt
         else if test $action = "delete todo"
             set choices
             add_checkboxes

@@ -1,0 +1,99 @@
+#!/usr/bin/fish
+set todos_file "$PWD/todos.csv"
+
+if not test -e $todos_file
+    gum style "Todo file doesn't exist."
+    gum confirm "Create one?" && touch $todos_file; or exit 1
+end
+
+gum style --border normal --margin 1 --padding "1 2" --width 50 --border-foreground 212 "Hi! What would you like $(gum style --foreground 212 'to do')?"
+set action $(gum choose "add todo" "show todos" "toggle todo" "delete todo" "exit")
+
+function parse_todos
+    set todos
+    for line in $(cat $todos_file)
+        set todo $(echo $line | cut -d "," -f 1)
+        set done $(echo $line | cut -d "," -f 2)
+        if string length -q -- $todo $done
+            test $done = true; and set done '[x]'; or set done '[ ]'
+        end
+        set -a todos "$done $todo"
+    end
+
+    echo "Your todos:" | gum style --bold --foreground 222
+    printf '%s\n' $todos | gum style --border rounded --margin 1 --padding "1 2" --width 50 --border-foreground 212
+end
+
+function add_checkboxes
+    for line in $(cat $todos_file)
+        set todo $(echo $line | cut -d "," -f 1)
+        set done $(echo $line | cut -d "," -f 2)
+        if string length -q -- $todo $done
+            test $done = true; and set done '[x]'; or set done '[ ]'
+        end
+        set -a choices "$done $todo"
+    end
+end
+
+function prompt
+    set action $(gum choose "add todo" "show todos" "toggle todo" "delete todo" "exit"); or gum spin --title "OK. See you later!" -- sleep 1 && exit 1
+end
+
+function show_helpful_error
+    gum spin --title "Oops! Returning to menu." -- sleep 1
+    prompt
+end
+
+if string length -q -- $action
+    while test $action != exit
+        if test $action = "add todo"
+            set todo $(gum input --placeholder "Your todo text...")
+            set todo $(echo "$todo" | sed 's/,/ /g')
+            if string length -q -- $todo
+                gum spin --title "Adding '$todo' to todos..." -- sleep .5
+                echo $todo,false >>$todos_file
+                parse_todos
+                prompt
+            else
+                show_helpful_error
+            end
+        else if test $action = "show todos"
+            parse_todos
+            prompt
+        else if test $action = "toggle todo"
+            set choices
+            add_checkboxes
+            set choice $(gum choose $choices)
+            set done $(echo $choice | cut -d " " -f 1)
+            set choice $(echo $choice | cut -d "]" -f 2  | sed 's/\s//')
+            if string length -q -- $choice
+                if test $done = '[x]'
+                    set done true
+                    sed -i "s/$choice,$done/$choice,false/g" $todos_file
+                else
+                    set done false
+                    sed -i "s/$choice,$done/$choice,true/g" $todos_file
+                end
+            else
+                show_helpful_error
+            end
+            parse_todos
+            prompt
+        else if test $action = "delete todo"
+            set choices
+            add_checkboxes
+            set choice $(gum choose $choices)
+            set done $(echo $choice | cut -d " " -f 1)
+            set choice $(echo $choice | cut -d "]" -f 2  | sed 's/\s//')
+            if string length -q -- $choice
+                sed -i /$choice/d $todos_file
+                parse_todos
+                prompt
+            else
+                show_helpful_error
+            end
+        end
+    end
+end
+
+gum spin --title "OK, see you later!" -s line -- sleep 1

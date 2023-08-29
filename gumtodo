@@ -1,9 +1,13 @@
 #!/usr/bin/fish
 set todos_file "$PWD/todos.csv"
 
+function gum_exit
+    gum spin --title "OK. See you later!" -- sleep 1 && exit 1
+end
+
 if not test -e $todos_file
     gum style "Todo file doesn't exist."
-    gum confirm "Create one?" && touch $todos_file; or exit 1
+    gum confirm "Create one?" && touch $todos_file; or gum_exit
 end
 
 gum style --border normal --margin 1 --padding "1 2" --width 50 --border-foreground 212 "Hi! What would you like $(gum style --foreground 212 'to do')?"
@@ -36,7 +40,7 @@ function add_checkboxes
 end
 
 function prompt
-    set action $(gum choose "add todo" "show todos" "toggle todo" "delete todo" "exit"); or gum spin --title "OK. See you later!" -- sleep 1 && exit 1
+    set action $(gum choose "add todo" "show todos" "toggle todo" "delete todo" "exit"); or gum_exit
 end
 
 function show_helpful_error
@@ -96,4 +100,4 @@ if string length -q -- $action
     end
 end
 
-gum spin --title "OK, see you later!" -s line -- sleep 1
+gum_exit
